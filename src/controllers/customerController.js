@@ -1,0 +1,194 @@
+const Service = require('../models/Service');
+const Shop = require('../models/Shop');
+const slotService = require('../services/slotService');
+const bookingService = require('../services/bookingService');
+const { NotFoundError, ValidationError } = require('../utils/errors');
+const { BOOKING_ADVANCE_DAYS } = require('../config/constants');
+const moment = require('moment');
+
+/**
+ * Customer Controller
+ * Handles customer-facing operations
+ */
+class CustomerController {
+  /**
+   * Get Shop Services
+   */
+  async getShopServices(req, res, next) {
+    try {
+      const { shopId } = req.params;
+      const tenantId = req.tenantId;
+
+      const services = await Service.find({
+        tenantId,
+        shopId,
+        isActive: true,
+      }).sort({ name: 1 });
+
+      res.json({
+        success: true,
+        services,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Get Available Slots
+   */
+  async getAvailableSlots(req, res, next) {
+    try {
+      const { shopId } = req.params;
+      const { startDate, endDate } = req.query;
+      const tenantId = req.tenantId;
+
+      // Default to today and booking advance days
+      const today = moment().startOf('day');
+      const defaultEndDate = moment().add(BOOKING_ADVANCE_DAYS, 'days');
+
+      const slots = await slotService.getAvailableSlots(
+        tenantId,
+        shopId,
+        startDate ? new Date(startDate) : today.toDate(),
+        endDate ? new Date(endDate) : defaultEndDate.toDate()
+      );
+
+      res.json({
+        success: true,
+        slots,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Book Slot
+   */
+  async bookSlot(req, res, next) {
+    try {
+      const { shopId } = req.params;
+      const { slotId, serviceId } = req.body;
+      const tenantId = req.tenantId;
+
+      if (!slotId || !serviceId) {
+        throw new ValidationError('Slot ID and service ID are required');
+      }
+
+      if (!req.user || req.user.role !== 'customer') {
+        throw new ValidationError('Customer authentication required');
+      }
+
+      const booking = await bookingService.createOnlineBooking(
+        tenantId,
+        shopId,
+        slotId,
+        serviceId,
+        req.user._id
+      );
+
+      res.status(201).json({
+        success: true,
+        booking,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Get Booking History
+   */
+  async getBookingHistory(req, res, next) {
+    try {
+      const tenantId = req.tenantId;
+
+      if (!req.user || req.user.role !== 'customer') {
+        throw new ValidationError('Customer authentication required');
+      }
+
+      const bookings = await bookingService.getCustomerBookings(tenantId, req.user._id);
+
+      res.json({
+        success: true,
+        bookings,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Cancel Booking
+   */
+  async cancelBooking(req, res, next) {
+    try {
+      const { shopId, bookingId } = req.params;
+      const { reason } = req.body;
+      const tenantId = req.tenantId;
+
+      if (!req.user || req.user.role !== 'customer') {
+        throw new ValidationError('Customer authentication required');
+      }
+
+      // Verify booking belongs to customer
+      const booking = await bookingService.getShopBookings(tenantId, shopId, {
+        status: 'confirmed',
+      });
+
+      const customerBooking = booking.find(
+        (b) => b._id.toString() === bookingId && b.customerId._id.toString() === req.user._id.toString()
+      );
+
+      if (!customerBooking) {
+        throw new NotFoundError('Booking');
+      }
+
+      const cancelledBooking = await bookingService.cancelBooking(
+        tenantId,
+        shopId,
+        bookingId,
+        req.user._id,
+        reason
+      );
+
+      res.json({
+        success: true,
+        booking: cancelledBooking,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Get Shop Details
+   */
+  async getShopDetails(req, res, next) {
+    try {
+      const { shopId } = req.params;
+      const tenantId = req.tenantId;
+
+      const shop = await Shop.findOne({
+        _id: shopId,
+        tenantId,
+        isActive: true,
+      });
+
+      if (!shop) {
+        throw new NotFoundError('Shop');
+      }
+
+      res.json({
+        success: true,
+        shop,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+}
+
+module.exports = new CustomerController();
+
