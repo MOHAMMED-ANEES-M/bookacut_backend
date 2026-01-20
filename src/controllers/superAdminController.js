@@ -462,10 +462,6 @@ class SuperAdminController {
       next(error);
     }
   }
-    } catch (error) {
-      next(error);
-    }
-  }
 
   /**
    * Update Tenant
