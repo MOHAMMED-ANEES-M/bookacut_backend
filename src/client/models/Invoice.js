@@ -36,10 +36,26 @@ const invoiceSchema = new mongoose.Schema(
       ref: 'Service',
       required: true,
     },
+    staffId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'StaffProfile',
+      index: true,
+    },
     amount: {
       type: Number,
       required: true,
       min: 0,
+    },
+    commissionAmount: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    commissionRate: {
+      type: Number,
+      default: 0,
+      min: 0,
+      max: 100,
     },
     tax: {
       type: Number,
@@ -91,6 +107,8 @@ invoiceSchema.index({ shopId: 1 });
 invoiceSchema.index({ shopId: 1, status: 1 });
 invoiceSchema.index({ shopId: 1, createdAt: -1 });
 invoiceSchema.index({ customerId: 1 });
+invoiceSchema.index({ shopId: 1, staffId: 1 });
+invoiceSchema.index({ shopId: 1, staffId: 1, status: 1 });
 
 module.exports = {
   schema: invoiceSchema,

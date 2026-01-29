@@ -26,10 +26,11 @@ const serviceSchema = new mongoose.Schema(
     description: {
       type: String,
     },
-    category: {
-      type: String,
-      enum: ['haircut', 'hair_color', 'facial', 'massage', 'manicure', 'pedicure', 'other'],
-      default: 'other',
+    categoryId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'ServiceCategory',
+      required: [true, 'Service category is required'],
+      index: true,
     },
     duration: {
       type: Number,
@@ -62,7 +63,7 @@ const serviceSchema = new mongoose.Schema(
 // Compound indexes
 serviceSchema.index({ tenantId: 1, shopId: 1 });
 serviceSchema.index({ tenantId: 1, shopId: 1, isActive: 1 });
-serviceSchema.index({ tenantId: 1, shopId: 1, category: 1 });
+serviceSchema.index({ tenantId: 1, shopId: 1, categoryId: 1 });
 
 module.exports = mongoose.model('Service', serviceSchema);
 

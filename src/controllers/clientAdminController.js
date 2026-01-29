@@ -4,6 +4,7 @@ const userSchema = require('../client/models/User').schema;
 const staffProfileSchema = require('../client/models/StaffProfile').schema;
 const roleSchema = require('../client/models/Role').schema;
 const serviceSchema = require('../client/models/Service').schema;
+const serviceCategorySchema = require('../client/models/ServiceCategory').schema;
 const shopSettingsSchema = require('../client/models/ShopSettings').schema;
 const bookingSchema = require('../client/models/Booking').schema;
 const invoiceSchema = require('../client/models/Invoice').schema;
@@ -433,24 +434,154 @@ class ClientAdminController {
   }
 
   /**
+   * Create Service Category
+   */
+  async createServiceCategory(req, res, next) {
+    try {
+      const { shopId } = req.params;
+      const { name, description } = req.body;
+      const tenantId = req.tenantId;
+      const databaseName = req.user.databaseName;
+
+      if (!name) {
+        throw new ValidationError('Category name is required');
+      }
+
+      const ServiceCategory = await getModel(databaseName, 'ServiceCategory', serviceCategorySchema);
+
+      const category = await ServiceCategory.create({
+        shopId,
+        name,
+        description,
+        isActive: true,
+      });
+
+      res.status(201).json({
+        success: true,
+        category,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Get Shop Service Categories
+   */
+  async getShopServiceCategories(req, res, next) {
+    try {
+      const { shopId } = req.params;
+      const databaseName = req.user.databaseName;
+
+      const ServiceCategory = await getModel(databaseName, 'ServiceCategory', serviceCategorySchema);
+
+      const categories = await ServiceCategory.find({ shopId, isActive: true }).sort({ name: 1 });
+
+      res.json({
+        success: true,
+        categories,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Update Service Category
+   */
+  async updateServiceCategory(req, res, next) {
+    try {
+      const { shopId, categoryId } = req.params;
+      const { name, description, isActive } = req.body;
+      const databaseName = req.user.databaseName;
+
+      const ServiceCategory = await getModel(databaseName, 'ServiceCategory', serviceCategorySchema);
+
+      const category = await ServiceCategory.findOne({ _id: categoryId, shopId });
+
+      if (!category) {
+        throw new NotFoundError('Service category');
+      }
+
+      if (name) category.name = name;
+      if (description !== undefined) category.description = description;
+      if (isActive !== undefined) category.isActive = isActive;
+
+      await category.save();
+
+      res.json({
+        success: true,
+        category,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Delete Service Category
+   */
+  async deleteServiceCategory(req, res, next) {
+    try {
+      const { shopId, categoryId } = req.params;
+      const databaseName = req.user.databaseName;
+
+      const ServiceCategory = await getModel(databaseName, 'ServiceCategory', serviceCategorySchema);
+      const Service = await getModel(databaseName, 'Service', serviceSchema);
+
+      // Check if category has services
+      const servicesCount = await Service.countDocuments({ shopId, categoryId, isActive: true });
+
+      if (servicesCount > 0) {
+        throw new ValidationError('Cannot delete category with active services. Please remove or reassign services first.');
+      }
+
+      const category = await ServiceCategory.findOne({ _id: categoryId, shopId });
+
+      if (!category) {
+        throw new NotFoundError('Service category');
+      }
+
+      category.isActive = false;
+      await category.save();
+
+      res.json({
+        success: true,
+        message: 'Service category deleted successfully',
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
    * Create Service
    */
   async createService(req, res, next) {
     try {
       const { shopId } = req.params;
-      const { name, description, category, duration, price } = req.body;
+      const { name, description, categoryId, duration, price } = req.body;
       const tenantId = req.tenantId;
+      const databaseName = req.user.databaseName;
 
-      if (!name || !duration || !price) {
-        throw new ValidationError('Name, duration, and price are required');
+      if (!name || !duration || !price || !categoryId) {
+        throw new ValidationError('Name, category, duration, and price are required');
+      }
+
+      const Service = await getModel(databaseName, 'Service', serviceSchema);
+      const ServiceCategory = await getModel(databaseName, 'ServiceCategory', serviceCategorySchema);
+
+      // Verify category exists
+      const category = await ServiceCategory.findOne({ _id: categoryId, shopId, isActive: true });
+      if (!category) {
+        throw new NotFoundError('Service category');
       }
 
       const service = await Service.create({
-        tenantId,
         shopId,
         name,
         description,
-        category,
+        categoryId,
         duration,
         price,
         isActive: true,
@@ -471,13 +602,67 @@ class ClientAdminController {
   async getShopServices(req, res, next) {
     try {
       const { shopId } = req.params;
-      const tenantId = req.tenantId;
+      const { categoryId } = req.query;
+      const databaseName = req.user.databaseName;
 
-      const services = await Service.find({ tenantId, shopId, isActive: true }).sort({ name: 1 });
+      const Service = await getModel(databaseName, 'Service', serviceSchema);
+
+      const query = { shopId, isActive: true };
+      if (categoryId) {
+        query.categoryId = categoryId;
+      }
+
+      const services = await Service.find(query)
+        .populate('categoryId', 'name')
+        .sort({ name: 1 });
 
       res.json({
         success: true,
         services,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Update Service
+   */
+  async updateService(req, res, next) {
+    try {
+      const { shopId, serviceId } = req.params;
+      const { name, description, categoryId, duration, price, isActive } = req.body;
+      const databaseName = req.user.databaseName;
+
+      const Service = await getModel(databaseName, 'Service', serviceSchema);
+      const ServiceCategory = await getModel(databaseName, 'ServiceCategory', serviceCategorySchema);
+
+      const service = await Service.findOne({ _id: serviceId, shopId });
+
+      if (!service) {
+        throw new NotFoundError('Service');
+      }
+
+      if (categoryId) {
+        // Verify category exists
+        const category = await ServiceCategory.findOne({ _id: categoryId, shopId, isActive: true });
+        if (!category) {
+          throw new NotFoundError('Service category');
+        }
+        service.categoryId = categoryId;
+      }
+
+      if (name) service.name = name;
+      if (description !== undefined) service.description = description;
+      if (duration) service.duration = duration;
+      if (price !== undefined) service.price = price;
+      if (isActive !== undefined) service.isActive = isActive;
+
+      await service.save();
+
+      res.json({
+        success: true,
+        service,
       });
     } catch (error) {
       next(error);
@@ -779,6 +964,96 @@ class ClientAdminController {
       res.json({
         success: true,
         invoices,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Get Staff Commission Report
+   */
+  async getStaffCommissionReport(req, res, next) {
+    try {
+      const { shopId, staffId } = req.params;
+      const { startDate, endDate } = req.query;
+      const tenantId = req.tenantId;
+
+      const report = await invoiceService.getStaffCommissionReport(
+        tenantId,
+        shopId,
+        staffId,
+        startDate,
+        endDate
+      );
+
+      res.json({
+        success: true,
+        report,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Get Shop Commission Report (All Staff)
+   */
+  async getShopCommissionReport(req, res, next) {
+    try {
+      const { shopId } = req.params;
+      const { startDate, endDate } = req.query;
+      const tenantId = req.tenantId;
+
+      const report = await invoiceService.getShopCommissionReport(
+        tenantId,
+        shopId,
+        startDate,
+        endDate
+      );
+
+      res.json({
+        success: true,
+        report,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Update Staff Commission Rate
+   */
+  async updateStaffCommissionRate(req, res, next) {
+    try {
+      const { shopId, staffId } = req.params;
+      const { commissionRate } = req.body;
+      const tenantId = req.tenantId;
+      const databaseName = req.user.databaseName;
+
+      if (commissionRate === undefined || commissionRate < 0 || commissionRate > 100) {
+        throw new ValidationError('Commission rate must be between 0 and 100');
+      }
+
+      const StaffProfile = await getModel(databaseName, 'StaffProfile', staffProfileSchema);
+
+      const staff = await StaffProfile.findOne({
+        _id: staffId,
+        shopId,
+        isActive: true,
+      });
+
+      if (!staff) {
+        throw new NotFoundError('Staff');
+      }
+
+      staff.commissionRate = commissionRate;
+      await staff.save();
+
+      res.json({
+        success: true,
+        staff,
+        message: 'Commission rate updated successfully',
       });
     } catch (error) {
       next(error);

@@ -89,12 +89,42 @@ router.put(
   clientAdminController.updateStaffCredentials.bind(clientAdminController)
 );
 
+// Service Category Management
+router.post(
+  '/shops/:shopId/service-categories',
+  validateShopAccess,
+  [
+    body('name').notEmpty().trim(),
+    validate,
+  ],
+  clientAdminController.createServiceCategory.bind(clientAdminController)
+);
+
+router.get(
+  '/shops/:shopId/service-categories',
+  validateShopAccess,
+  clientAdminController.getShopServiceCategories.bind(clientAdminController)
+);
+
+router.put(
+  '/shops/:shopId/service-categories/:categoryId',
+  validateShopAccess,
+  clientAdminController.updateServiceCategory.bind(clientAdminController)
+);
+
+router.delete(
+  '/shops/:shopId/service-categories/:categoryId',
+  validateShopAccess,
+  clientAdminController.deleteServiceCategory.bind(clientAdminController)
+);
+
 // Service Management
 router.post(
   '/shops/:shopId/services',
   validateShopAccess,
   [
     body('name').notEmpty().trim(),
+    body('categoryId').notEmpty(),
     body('duration').isInt({ min: 1 }),
     body('price').isFloat({ min: 0 }),
     validate,
@@ -106,6 +136,12 @@ router.get(
   '/shops/:shopId/services',
   validateShopAccess,
   clientAdminController.getShopServices.bind(clientAdminController)
+);
+
+router.put(
+  '/shops/:shopId/services/:serviceId',
+  validateShopAccess,
+  clientAdminController.updateService.bind(clientAdminController)
 );
 
 // Shop Settings
@@ -191,6 +227,30 @@ router.get(
   '/shops/:shopId/invoices',
   validateShopAccess,
   clientAdminController.getShopInvoices.bind(clientAdminController)
+);
+
+// Commission Reports
+router.get(
+  '/shops/:shopId/commissions',
+  validateShopAccess,
+  clientAdminController.getShopCommissionReport.bind(clientAdminController)
+);
+
+router.get(
+  '/shops/:shopId/staff/:staffId/commissions',
+  validateShopAccess,
+  clientAdminController.getStaffCommissionReport.bind(clientAdminController)
+);
+
+// Staff Commission Rate Management
+router.put(
+  '/shops/:shopId/staff/:staffId/commission-rate',
+  validateShopAccess,
+  [
+    body('commissionRate').isFloat({ min: 0, max: 100 }),
+    validate,
+  ],
+  clientAdminController.updateStaffCommissionRate.bind(clientAdminController)
 );
 
 module.exports = router;
