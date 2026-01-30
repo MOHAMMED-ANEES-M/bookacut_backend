@@ -6,6 +6,7 @@ const shopSchema = require('../client/models/Shop').schema;
 const clientDatabaseService = require('../services/clientDatabaseService');
 const { NotFoundError, ValidationError } = require('../utils/errors');
 const moment = require('moment');
+const { getPaginationParams, formatPaginatedResponse } = require('../utils/pagination');
 
 /**
  * Super Admin Controller
@@ -17,8 +18,8 @@ class SuperAdminController {
    */
   async getAllTenants(req, res, next) {
     try {
-      const { page = 1, limit = 10, search, status } = req.query;
-      const skip = (page - 1) * limit;
+      const { page, limit, skip } = getPaginationParams(req.query);
+      const { search, status } = req.query;
 
       // Build query
       const query = {};
@@ -39,7 +40,7 @@ class SuperAdminController {
       const clientAdmins = await ClientAdmin.find(query)
         .sort({ createdAt: -1 })
         .skip(skip)
-        .limit(parseInt(limit));
+        .limit(limit);
 
       // Get shop counts and admin details for each client
       const clientsWithShopCounts = await Promise.all(
@@ -90,16 +91,7 @@ class SuperAdminController {
 
       const total = await ClientAdmin.countDocuments(query);
 
-      res.json({
-        success: true,
-        tenants: clientsWithShopCounts,
-        pagination: {
-          page: parseInt(page),
-          limit: parseInt(limit),
-          total,
-          pages: Math.ceil(total / limit),
-        },
-      });
+      res.json(formatPaginatedResponse(clientsWithShopCounts, total, { page, limit }, 'tenants'));
     } catch (error) {
       next(error);
     }
@@ -301,27 +293,17 @@ class SuperAdminController {
   async getPaymentHistory(req, res, next) {
     try {
       const { tenantId } = req.params;
-      const { page = 1, limit = 20 } = req.query;
-      const skip = (page - 1) * limit;
+      const { page, limit, skip } = getPaginationParams(req.query);
 
       const payments = await SubscriptionPayment.find({ tenantId })
         .populate('recordedBy', 'firstName lastName email')
         .sort({ paymentDate: -1 })
         .skip(skip)
-        .limit(parseInt(limit));
+        .limit(limit);
 
       const total = await SubscriptionPayment.countDocuments({ tenantId });
 
-      res.json({
-        success: true,
-        payments,
-        pagination: {
-          page: parseInt(page),
-          limit: parseInt(limit),
-          total,
-          pages: Math.ceil(total / limit),
-        },
-      });
+      res.json(formatPaginatedResponse(payments, total, { page, limit }, 'payments'));
     } catch (error) {
       next(error);
     }

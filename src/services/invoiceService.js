@@ -254,9 +254,9 @@ class InvoiceService {
   }
 
   /**
-   * Get invoices for a shop
+   * Get invoices for a shop with pagination
    */
-  async getShopInvoices(tenantId, shopId, filters = {}) {
+  async getShopInvoices(tenantId, shopId, filters = {}, pagination = {}) {
     try {
       const query = {
         tenantId,
@@ -274,12 +274,18 @@ class InvoiceService {
         };
       }
 
+      const { skip = 0, limit = 10 } = pagination;
+
       const invoices = await Invoice.find(query)
         .populate('customerId', 'firstName lastName phone email')
         .populate('serviceId', 'name')
         .populate('staffId', 'employeeId')
         .populate('bookingId', 'scheduledAt')
-        .sort({ createdAt: -1 });
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit);
+
+      const total = await Invoice.countDocuments(query);
 
       // Get payment counts for each invoice
       const invoiceIds = invoices.map(inv => inv._id);
@@ -309,7 +315,7 @@ class InvoiceService {
         invoice.paymentCount = paymentCountMap[invoice._id.toString()] || 0;
       });
 
-      return invoices;
+      return { invoices, total };
     } catch (error) {
       throw error;
     }

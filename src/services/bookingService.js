@@ -402,9 +402,9 @@ class BookingService {
   }
 
   /**
-   * Get bookings for a shop
+   * Get bookings for a shop with pagination
    */
-  async getShopBookings(tenantId, shopId, filters = {}) {
+  async getShopBookings(tenantId, shopId, filters = {}, pagination = {}) {
     try {
       const query = {
         tenantId,
@@ -425,34 +425,48 @@ class BookingService {
         query.staffId = filters.staffId;
       }
 
+      const { skip = 0, limit = 10 } = pagination;
+
       const bookings = await Booking.find(query)
         .populate('customerId', 'firstName lastName phone email')
         .populate('serviceId', 'name price')
         .populate('staffId', 'userId')
         .populate('slotId', 'startTime endTime')
-        .sort({ scheduledAt: 1 });
+        .sort({ scheduledAt: 1 })
+        .skip(skip)
+        .limit(limit);
 
-      return bookings;
+      const total = await Booking.countDocuments(query);
+
+      return { bookings, total };
     } catch (error) {
       throw error;
     }
   }
 
   /**
-   * Get customer booking history
+   * Get customer booking history with pagination
    */
-  async getCustomerBookings(tenantId, customerId) {
+  async getCustomerBookings(tenantId, customerId, pagination = {}) {
     try {
-      const bookings = await Booking.find({
+      const { skip = 0, limit = 10 } = pagination;
+      
+      const query = {
         tenantId,
         customerId,
-      })
+      };
+
+      const bookings = await Booking.find(query)
         .populate('shopId', 'name address phone')
         .populate('serviceId', 'name price')
         .populate('slotId', 'date startTime endTime')
-        .sort({ scheduledAt: -1 });
+        .sort({ scheduledAt: -1 })
+        .skip(skip)
+        .limit(limit);
 
-      return bookings;
+      const total = await Booking.countDocuments(query);
+
+      return { bookings, total };
     } catch (error) {
       throw error;
     }

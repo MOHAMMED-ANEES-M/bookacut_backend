@@ -7,6 +7,7 @@ const invoicePrinterService = require('../services/invoicePrinterService');
 const emailService = require('../services/emailService');
 const { NotFoundError } = require('../utils/errors');
 const fs = require('fs');
+const { getPaginationParams, formatPaginatedResponse } = require('../utils/pagination');
 
 /**
  * Staff Controller
@@ -40,12 +41,16 @@ class StaffController {
         staffId: staffId || staffProfile._id,
       };
 
-      const bookings = await bookingService.getShopBookings(tenantId, shopId, filters);
+      const { page, limit, skip } = getPaginationParams(req.query);
 
-      res.json({
-        success: true,
-        bookings,
-      });
+      const { bookings, total } = await bookingService.getShopBookings(
+        tenantId,
+        shopId,
+        filters,
+        { skip, limit }
+      );
+
+      res.json(formatPaginatedResponse(bookings, total, { page, limit }, 'bookings'));
     } catch (error) {
       next(error);
     }

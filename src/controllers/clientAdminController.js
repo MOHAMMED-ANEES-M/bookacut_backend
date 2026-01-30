@@ -14,6 +14,7 @@ const slotBlockingService = require('../services/slotBlockingService');
 const invoiceService = require('../services/invoiceService');
 const { NotFoundError, ValidationError, ConflictError } = require('../utils/errors');
 const { ROLES, PERMISSIONS } = require('../config/constants');
+const { getPaginationParams, formatPaginatedResponse } = require('../utils/pagination');
 
 /**
  * Client Admin Controller
@@ -111,12 +112,17 @@ class ClientAdminController {
   async getShops(req, res, next) {
     try {
       const tenantId = req.tenantId;
-      const shops = await Shop.find({ tenantId, isActive: true }).sort({ createdAt: -1 });
+      const { page, limit, skip } = getPaginationParams(req.query);
 
-      res.json({
-        success: true,
-        shops,
-      });
+      const query = { tenantId, isActive: true };
+      const shops = await Shop.find(query)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit);
+
+      const total = await Shop.countDocuments(query);
+
+      res.json(formatPaginatedResponse(shops, total, { page, limit }, 'shops'));
     } catch (error) {
       next(error);
     }
@@ -267,15 +273,18 @@ class ClientAdminController {
     try {
       const { shopId } = req.params;
       const tenantId = req.tenantId;
+      const { page, limit, skip } = getPaginationParams(req.query);
 
-      const staff = await StaffProfile.find({ tenantId, shopId, isActive: true })
+      const query = { tenantId, shopId, isActive: true };
+      const staff = await StaffProfile.find(query)
         .populate('userId', 'firstName lastName email phone')
-        .sort({ createdAt: -1 });
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit);
 
-      res.json({
-        success: true,
-        staff,
-      });
+      const total = await StaffProfile.countDocuments(query);
+
+      res.json(formatPaginatedResponse(staff, total, { page, limit }, 'staff'));
     } catch (error) {
       next(error);
     }
@@ -473,15 +482,19 @@ class ClientAdminController {
     try {
       const { shopId } = req.params;
       const databaseName = req.user.databaseName;
+      const { page, limit, skip } = getPaginationParams(req.query);
 
       const ServiceCategory = await getModel(databaseName, 'ServiceCategory', serviceCategorySchema);
 
-      const categories = await ServiceCategory.find({ shopId, isActive: true }).sort({ name: 1 });
+      const query = { shopId, isActive: true };
+      const categories = await ServiceCategory.find(query)
+        .sort({ name: 1 })
+        .skip(skip)
+        .limit(limit);
 
-      res.json({
-        success: true,
-        categories,
-      });
+      const total = await ServiceCategory.countDocuments(query);
+
+      res.json(formatPaginatedResponse(categories, total, { page, limit }, 'categories'));
     } catch (error) {
       next(error);
     }
@@ -605,6 +618,7 @@ class ClientAdminController {
       const { shopId } = req.params;
       const { categoryId } = req.query;
       const databaseName = req.user.databaseName;
+      const { page, limit, skip } = getPaginationParams(req.query);
 
       const Service = await getModel(databaseName, 'Service', serviceSchema);
 
@@ -615,12 +629,13 @@ class ClientAdminController {
 
       const services = await Service.find(query)
         .populate('categoryId', 'name')
-        .sort({ name: 1 });
+        .sort({ name: 1 })
+        .skip(skip)
+        .limit(limit);
 
-      res.json({
-        success: true,
-        services,
-      });
+      const total = await Service.countDocuments(query);
+
+      res.json(formatPaginatedResponse(services, total, { page, limit }, 'services'));
     } catch (error) {
       next(error);
     }
@@ -955,17 +970,16 @@ class ClientAdminController {
       const { shopId } = req.params;
       const { status, startDate, endDate } = req.query;
       const tenantId = req.tenantId;
+      const { page, limit, skip } = getPaginationParams(req.query);
 
-      const invoices = await invoiceService.getShopInvoices(tenantId, shopId, {
-        status,
-        startDate,
-        endDate,
-      });
+      const { invoices, total } = await invoiceService.getShopInvoices(
+        tenantId,
+        shopId,
+        { status, startDate, endDate },
+        { skip, limit }
+      );
 
-      res.json({
-        success: true,
-        invoices,
-      });
+      res.json(formatPaginatedResponse(invoices, total, { page, limit }, 'invoices'));
     } catch (error) {
       next(error);
     }

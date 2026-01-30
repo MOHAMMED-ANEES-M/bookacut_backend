@@ -5,6 +5,7 @@ const bookingService = require('../services/bookingService');
 const { NotFoundError, ValidationError } = require('../utils/errors');
 const { BOOKING_ADVANCE_DAYS } = require('../config/constants');
 const moment = require('moment');
+const { getPaginationParams, formatPaginatedResponse } = require('../utils/pagination');
 
 /**
  * Customer Controller
@@ -19,16 +20,22 @@ class CustomerController {
       const { shopId } = req.params;
       const tenantId = req.tenantId;
 
-      const services = await Service.find({
+      const { page, limit, skip } = getPaginationParams(req.query);
+
+      const query = {
         tenantId,
         shopId,
         isActive: true,
-      }).sort({ name: 1 });
+      };
 
-      res.json({
-        success: true,
-        services,
-      });
+      const services = await Service.find(query)
+        .sort({ name: 1 })
+        .skip(skip)
+        .limit(limit);
+
+      const total = await Service.countDocuments(query);
+
+      res.json(formatPaginatedResponse(services, total, { page, limit }, 'services'));
     } catch (error) {
       next(error);
     }
@@ -108,12 +115,15 @@ class CustomerController {
         throw new ValidationError('Customer authentication required');
       }
 
-      const bookings = await bookingService.getCustomerBookings(tenantId, req.user._id);
+      const { page, limit, skip } = getPaginationParams(req.query);
 
-      res.json({
-        success: true,
-        bookings,
-      });
+      const { bookings, total } = await bookingService.getCustomerBookings(
+        tenantId,
+        req.user._id,
+        { skip, limit }
+      );
+
+      res.json(formatPaginatedResponse(bookings, total, { page, limit }, 'bookings'));
     } catch (error) {
       next(error);
     }
