@@ -7,179 +7,128 @@
    cp .env.example .env
    ```
 
-2. **Edit `.env` file** with your configuration
+2. **Edit `.env` file** with your configuration.
 
 3. **Required changes before running:**
-   - `MONGODB_URI` - Your MongoDB connection string
-   - `JWT_SECRET` - A strong random secret (min 32 characters)
+   - `MONGODB_URI` - Your MongoDB connection string.
+   - `JWT_SECRET` - A strong random secret (min 32 characters).
+   - `SMTP_USER` & `SMTP_PASSWORD` - For email notifications.
 
 ## Environment Variables Reference
 
-### Server Configuration
+### Core Configuration
 
 | Variable | Default | Description |
-|---------|---------|-------------|
-| `PORT` | `3000` | Server port number |
-| `NODE_ENV` | `development` | Environment: `development`, `production`, `test` |
+|:---|:---|:---|
+| `PORT` | `3000` | Server port number. |
+| `NODE_ENV` | `development` | Environment mode: `development`, `production`, `test`. |
+| `CORS_ORIGIN` | `*` | Allowed CORS origins (e.g., `https://example.com`). |
+| `LOG_LEVEL` | `info` | Logging level: `error`, `warn`, `info`, `debug`. |
 
-### MongoDB Configuration
-
-| Variable | Default | Description |
-|---------|---------|-------------|
-| `MONGODB_URI` | `mongodb://localhost:27017/bookacut` | MongoDB connection string |
-| `MONGODB_OPTIONS` | (empty) | Additional MongoDB connection options |
-
-**MongoDB URI Examples:**
-- Local: `mongodb://localhost:27017/bookacut`
-- Atlas: `mongodb+srv://user:pass@cluster.mongodb.net/bookacut`
-
-**Important:** The system uses a single MongoDB cluster with multiple databases:
-- `platform_db` - Platform super admin and client admin metadata
-- `client_*_db` - Individual client databases (created automatically)
-
-### JWT Configuration
+### Database Configuration (Multi-tenant)
 
 | Variable | Default | Description |
-|---------|---------|-------------|
-| `JWT_SECRET` | (required) | Secret key for JWT tokens (min 32 chars) |
-| `JWT_EXPIRE` | `7d` | Token expiration (e.g., `7d`, `24h`, `1h`) |
+|:---|:---|:---|
+| `MONGODB_URI` | (required) | MongoDB cluster connection string. |
 
-**Generate secure JWT_SECRET:**
+> [!IMPORTANT]
+> The system uses a multi-database architecture. `MONGODB_URI` should point to the cluster. The application will automatically manage:
+> - `platform_db`: For super admin and client metadata.
+> - `client_*_db`: Individual databases for each tenant.
+
+### Authentication & Security
+
+| Variable | Default | Description |
+|:---|:---|:---|
+| `JWT_SECRET` | (required) | Secret key for JWT (min 32 characters). |
+| `JWT_EXPIRE` | `7d` | Token expiration (e.g., `7d`, `24h`, `1h`). |
+
+**Generate a secure secret:**
 ```bash
-# Linux/Mac
-openssl rand -base64 32
-
-# Or use Node.js
 node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
 ```
 
-### Platform Admin
+### Email (SMTP) Configuration
+
+Required for sending invoices and registration OTPs.
 
 | Variable | Default | Description |
-|---------|---------|-------------|
-| `PLATFORM_ADMIN_EMAIL` | `admin@bookacut.com` | Super admin email |
-| `PLATFORM_ADMIN_PASSWORD` | `ChangeThisPassword123!` | Super admin password |
+|:---|:---|:---|
+| `SMTP_HOST` | `smtp.gmail.com` | SMTP server hostname. |
+| `SMTP_PORT` | `587` | SMTP server port. |
+| `SMTP_SECURE` | `false` | Use TLS (`true` for port 465). |
+| `SMTP_USER` | (required) | SMTP username/email. |
+| `SMTP_PASSWORD` | (required) | SMTP password or app-specific password. |
 
-**⚠️ Change these before running seed script!**
+### Business Logic Defaults
+
+| Variable | Default | Description |
+|:---|:---|:---|
+| `DEFAULT_SLOT_DURATION_MINUTES` | `30` | Default duration for booking slots. |
+| `BOOKING_ADVANCE_DAYS` | `7` | How many days ahead customers can book. |
+| `NO_SHOW_TIMEOUT_MINUTES` | `5` | Minutes before a booking is marked as no-show. |
+| `DEFAULT_WORKING_HOURS_START` | `09:00` | Default shop opening time. |
+| `DEFAULT_WORKING_HOURS_END` | `18:00` | Default shop closing time. |
+
+### Seed & Development
+
+| Variable | Default | Description |
+|:---|:---|:---|
+| `PLATFORM_ADMIN_EMAIL` | `admin@bookacut.com` | Initial super admin email. |
+| `PLATFORM_ADMIN_PASSWORD` | `ChangeThisPassword123!` | Initial super admin password. |
+| `CREATE_SAMPLE_CLIENT` | `false` | Set `true` to create a sample client during seeding. |
 
 ### Rate Limiting
 
 | Variable | Default | Description |
-|---------|---------|-------------|
-| `RATE_LIMIT_WINDOW_MS` | `900000` | Rate limit window (15 minutes) |
-| `RATE_LIMIT_MAX_REQUESTS` | `100` | Max requests per window |
+|:---|:---|:---|
+| `RATE_LIMIT_WINDOW_MS` | `900000` | Window size in ms (15 mins default). |
+| `RATE_LIMIT_MAX_REQUESTS` | `100` | Max requests per IP per window. |
 
-### Booking Configuration
-
-| Variable | Default | Description |
-|---------|---------|-------------|
-| `BOOKING_ADVANCE_DAYS` | `7` | Max days customers can book ahead |
-| `NO_SHOW_TIMEOUT_MINUTES` | `5` | Minutes before marking as no-show |
-
-### Shop Defaults
-
-| Variable | Default | Description |
-|---------|---------|-------------|
-| `DEFAULT_SLOT_DURATION_MINUTES` | `30` | Default slot duration |
-| `DEFAULT_WORKING_HOURS_START` | `09:00` | Default opening time |
-| `DEFAULT_WORKING_HOURS_END` | `18:00` | Default closing time |
-
-### CORS Configuration
-
-| Variable | Default | Description |
-|---------|---------|-------------|
-| `CORS_ORIGIN` | `*` | Allowed CORS origins (use specific domain in production) |
-
-**Production example:**
-```
-CORS_ORIGIN=https://yourdomain.com,https://www.yourdomain.com
-```
-
-### Other Configuration
-
-| Variable | Default | Description |
-|---------|---------|-------------|
-| `CREATE_SAMPLE_CLIENT` | `false` | Create sample client admin and database in seed script |
-| `LOG_LEVEL` | `info` | Logging level: `error`, `warn`, `info`, `debug` |
-
-**Note:** `CREATE_SAMPLE_CLIENT` creates a sample client admin in the seed script, which automatically creates a new client database.
-
-## Production Checklist
-
-Before deploying to production:
-
-- [ ] Set `NODE_ENV=production`
-- [ ] Generate strong `JWT_SECRET` (32+ characters)
-- [ ] Use secure MongoDB instance (Atlas recommended)
-- [ ] Set specific `CORS_ORIGIN` (not `*`)
-- [ ] Change `PLATFORM_ADMIN_EMAIL` and `PLATFORM_ADMIN_PASSWORD`
-- [ ] Review rate limiting settings
-- [ ] Set appropriate `LOG_LEVEL`
-- [ ] Use environment-specific MongoDB URI
-- [ ] Never commit `.env` file to version control
-
-## Example Production .env
+## Complete `.env` Example
 
 ```env
-# Production Environment
-NODE_ENV=production
+# Server
 PORT=3000
+NODE_ENV=development
+CORS_ORIGIN=*
+LOG_LEVEL=debug
 
-# MongoDB Atlas
-MONGODB_URI=mongodb+srv://user:password@cluster.mongodb.net/bookacut?retryWrites=true&w=majority
+# Database
+MONGODB_URI=mongodb://localhost:27017/platform_db
 
-# Strong JWT Secret (generated)
-JWT_SECRET=your-generated-secret-key-min-32-characters-long-random-string
+# Auth
+JWT_SECRET=your_super_secret_random_string_here
 JWT_EXPIRE=7d
 
-# Platform Admin
-PLATFORM_ADMIN_EMAIL=admin@yourdomain.com
-PLATFORM_ADMIN_PASSWORD=StrongPassword123!
+# SMTP (Gmail Example)
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_SECURE=false
+SMTP_USER=your-email@gmail.com
+SMTP_PASSWORD=your-app-specific-password
 
-# Rate Limiting
+# Business Logic
+DEFAULT_SLOT_DURATION_MINUTES=30
+BOOKING_ADVANCE_DAYS=7
+NO_SHOW_TIMEOUT_MINUTES=15
+DEFAULT_WORKING_HOURS_START=09:00
+DEFAULT_WORKING_HOURS_END=19:00
+
+# Seeding
+PLATFORM_ADMIN_EMAIL=admin@yourdomain.com
+PLATFORM_ADMIN_PASSWORD=StrongSecurePassword123!
+CREATE_SAMPLE_CLIENT=true
+
+# Security
 RATE_LIMIT_WINDOW_MS=900000
 RATE_LIMIT_MAX_REQUESTS=100
-
-# Booking Settings
-BOOKING_ADVANCE_DAYS=7
-NO_SHOW_TIMEOUT_MINUTES=5
-
-# CORS (Specific domains)
-CORS_ORIGIN=https://yourdomain.com,https://www.yourdomain.com
-
-# Logging
-LOG_LEVEL=warn
 ```
 
 ## Security Notes
 
-1. **Never commit `.env` file** - It's already in `.gitignore`
-2. **Use different secrets** for development and production
-3. **Rotate JWT_SECRET** periodically in production
-4. **Use environment variables** in deployment platforms (Heroku, AWS, etc.)
-5. **Restrict CORS** to specific domains in production
-6. **Use MongoDB authentication** in production
-7. **Enable MongoDB SSL/TLS** for cloud databases
-
-## Troubleshooting
-
-### MongoDB Connection Failed
-- Check `MONGODB_URI` format
-- Verify MongoDB is running
-- Check network connectivity
-- Verify credentials (for Atlas)
-
-### JWT Token Invalid
-- Verify `JWT_SECRET` is set
-- Check token expiration (`JWT_EXPIRE`)
-- Ensure secret hasn't changed between restarts
-
-### CORS Errors
-- Check `CORS_ORIGIN` setting
-- Verify frontend domain matches
-- Use `*` only in development
-
-### Rate Limiting Too Strict
-- Increase `RATE_LIMIT_MAX_REQUESTS`
-- Increase `RATE_LIMIT_WINDOW_MS`
+1. **Never commit `.env` file** - It is included in `.gitignore`.
+2. **Production:** Always use unique, strong secrets and restricted `CORS_ORIGIN`.
+3. **SMTP:** Use app-specific passwords if using Gmail.
+4. **MongoDB:** Use URI with authentication for production clusters.
 

@@ -51,13 +51,14 @@ A production-ready, multi-tenant SaaS backend for Beauty Parlour & Barber Shop M
    cp .env.example .env
    ```
    
-   Edit `.env` and configure:
+   Please refer to [ENV_SETUP.md](file:///d:/Bookacut%20Project/bookacut_backend/ENV_SETUP.md) for a detailed list of all required and optional environment variables.
+
+   Minimum required variables:
    ```env
-   PORT=3000
-   NODE_ENV=development
-   MONGODB_URI=mongodb://localhost:27017/bookacut
-   JWT_SECRET=your-super-secret-jwt-key-change-in-production
-   JWT_EXPIRE=7d
+   MONGODB_URI=mongodb://localhost:27017
+   JWT_SECRET=your-super-secret-jwt-key
+   SMTP_USER=your-email@gmail.com
+   SMTP_PASSWORD=your-app-password
    ```
 
 4. **Start MongoDB**

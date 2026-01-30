@@ -11,12 +11,12 @@
    ```bash
    cp .env.example .env
    ```
-   Edit `.env` and set:
-   - `MONGODB_URI` - Your MongoDB connection string (e.g., `mongodb://localhost:27017/bookacut`)
-   - `JWT_SECRET` - A strong secret key (min 32 characters)
-   - `PLATFORM_ADMIN_EMAIL` - Admin email (optional, default: `admin@bookacut.com`)
-   - `PLATFORM_ADMIN_PASSWORD` - Admin password (optional, default: `ChangeThisPassword123!`)
-   - `CREATE_SAMPLE_CLIENT` - Set to `true` to create sample client (optional)
+   Refer to [ENV_SETUP.md](file:///d:/Bookacut%20Project/bookacut_backend/ENV_SETUP.md) for full details.
+   Essential variables:
+   - `MONGODB_URI` - MongoDB cluster URI (e.g., `mongodb://localhost:27017`)
+   - `JWT_SECRET` - Strong secret key (min 32 characters)
+   - `SMTP_USER` & `SMTP_PASSWORD` - Email credentials
+   - `PLATFORM_ADMIN_EMAIL` & `PLATFORM_ADMIN_PASSWORD` - Initial admin credentials
 
 3. **Start MongoDB**
    Ensure MongoDB is running on your system.
