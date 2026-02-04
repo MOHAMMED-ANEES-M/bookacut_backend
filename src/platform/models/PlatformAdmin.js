@@ -77,8 +77,8 @@ platformAdminSchema.index({ isActive: 1 });
 /**
  * Get PlatformAdmin model for platform_db
  */
-function getPlatformAdminModel() {
-  const connection = connectionManager.getPlatformDb();
+async function getPlatformAdminModel() {
+  const connection = await connectionManager.getPlatformDb();
   if (!connection.models.PlatformAdmin) {
     return connection.model('PlatformAdmin', platformAdminSchema);
   }

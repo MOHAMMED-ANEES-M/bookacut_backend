@@ -42,8 +42,8 @@ clientDatabaseMapSchema.index({ clientId: 1, databaseName: 1 });
 /**
  * Get ClientDatabaseMap model for platform_db
  */
-function getClientDatabaseMapModel() {
-  const connection = connectionManager.getPlatformDb();
+async function getClientDatabaseMapModel() {
+  const connection = await connectionManager.getPlatformDb();
   if (!connection.models.ClientDatabaseMap) {
     return connection.model('ClientDatabaseMap', clientDatabaseMapSchema);
   }

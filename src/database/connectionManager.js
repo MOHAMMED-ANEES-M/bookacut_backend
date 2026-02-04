@@ -21,7 +21,7 @@ class ConnectionManager {
   async initialize() {
     try {
       this.connectionString = process.env.MONGODB_URI;
-      
+
       // Parse connection string to get base URI (without database name)
       const uriParts = this.connectionString.split('/');
       const baseUri = uriParts.slice(0, -1).join('/');
@@ -29,7 +29,7 @@ class ConnectionManager {
 
       // Connect to platform_db by default
       const platformUri = `${baseUri}/platform_db${this.connectionString.includes('?') ? '?' + this.connectionString.split('?')[1] : ''}`;
-      
+
       this.mainConnection = await mongoose.createConnection(platformUri, {
         useNewUrlParser: true,
         useUnifiedTopology: true,
@@ -110,8 +110,8 @@ class ConnectionManager {
   /**
    * Get platform database connection
    */
-  getPlatformDb() {
-    return this.getDb('platform_db');
+  async getPlatformDb() {
+    return await this.getDb('platform_db');
   }
 
   /**

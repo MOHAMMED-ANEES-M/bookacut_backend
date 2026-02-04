@@ -1,9 +1,9 @@
-const Booking = require('../models/Booking');
-const Slot = require('../models/Slot');
-const ShopSettings = require('../models/ShopSettings');
 const moment = require('moment');
 const { BOOKING_STATUS } = require('../config/constants');
 const bookingService = require('./bookingService');
+const { getModel } = require('../database/modelFactory');
+const connectionManager = require('../database/connectionManager');
+const { getModel: getClientDatabaseMapModel } = require('../platform/models/ClientDatabaseMap');
 
 /**
  * Cron Service
@@ -19,42 +19,67 @@ class CronService {
       const now = moment();
       const timeoutMinutes = parseInt(process.env.NO_SHOW_TIMEOUT_MINUTES) || 5;
 
-      // Find confirmed bookings that are past their scheduled time + timeout
-      const bookings = await Booking.find({
-        status: BOOKING_STATUS.CONFIRMED,
-        scheduledAt: {
-          $lte: moment().subtract(timeoutMinutes, 'minutes').toDate(),
-        },
-      })
-        .populate('slotId')
-        .populate('shopId');
+      // Get all client databases
+      const ClientDatabaseMap = await getClientDatabaseMapModel();
+      const clientDatabases = await ClientDatabaseMap.find({});
 
-      for (const booking of bookings) {
+      let totalProcessed = 0;
+
+      // Process each client database
+      for (const clientDb of clientDatabases) {
         try {
-          // Get shop-specific timeout if available
-          const settings = await ShopSettings.findOne({
-            tenantId: booking.tenantId,
-            shopId: booking.shopId._id,
-          });
+          const databaseName = clientDb.databaseName;
 
-          const shopTimeout = settings?.noShowTimeoutMinutes || timeoutMinutes;
-          const shouldMarkNoShow = moment(booking.scheduledAt).add(shopTimeout, 'minutes').isBefore(now);
+          // Get models for this specific database
+          const BookingSchema = require('../models/Booking').schema;
+          const ShopSettingsSchema = require('../models/ShopSettings').schema;
 
-          if (shouldMarkNoShow) {
-            await bookingService.markNoShow(
-              booking.tenantId,
-              booking.shopId._id,
-              booking._id
-            );
+          const Booking = await getModel(databaseName, 'Booking', BookingSchema);
+          const ShopSettings = await getModel(databaseName, 'ShopSettings', ShopSettingsSchema);
 
-            console.log(`Marked booking ${booking._id} as no-show`);
+          // Find confirmed bookings that are past their scheduled time + timeout
+          const bookings = await Booking.find({
+            status: BOOKING_STATUS.CONFIRMED,
+            scheduledAt: {
+              $lte: moment().subtract(timeoutMinutes, 'minutes').toDate(),
+            },
+          })
+            .populate('slotId')
+            .populate('shopId');
+
+          for (const booking of bookings) {
+            try {
+              // Get shop-specific timeout if available
+              const settings = await ShopSettings.findOne({
+                tenantId: booking.tenantId,
+                shopId: booking.shopId._id,
+              });
+
+              const shopTimeout = settings?.noShowTimeoutMinutes || timeoutMinutes;
+              const shouldMarkNoShow = moment(booking.scheduledAt).add(shopTimeout, 'minutes').isBefore(now);
+
+              if (shouldMarkNoShow) {
+                await bookingService.markNoShow(
+                  booking.tenantId,
+                  booking.shopId._id,
+                  booking._id,
+                  databaseName
+                );
+
+                console.log(`Marked booking ${booking._id} as no-show in ${databaseName}`);
+              }
+            } catch (error) {
+              console.error(`Error processing no-show for booking ${booking._id} in ${databaseName}:`, error);
+            }
           }
+
+          totalProcessed += bookings.length;
         } catch (error) {
-          console.error(`Error processing no-show for booking ${booking._id}:`, error);
+          console.error(`Error processing database ${clientDb.databaseName}:`, error);
         }
       }
 
-      return { processed: bookings.length };
+      return { processed: totalProcessed };
     } catch (error) {
       console.error('Error in handleNoShows cron:', error);
       throw error;

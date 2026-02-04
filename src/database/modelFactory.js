@@ -36,7 +36,7 @@ async function getModel(databaseName, modelName, schema) {
   // Get connection for this database (async - connection may need to be created)
   let connection;
   if (databaseName === 'platform_db') {
-    connection = connectionManager.getPlatformDb();
+    connection = await connectionManager.getPlatformDb();
   } else {
     // For client databases, get or create connection
     connection = await connectionManager.getDb(databaseName);
