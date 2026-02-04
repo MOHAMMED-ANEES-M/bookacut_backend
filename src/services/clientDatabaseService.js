@@ -1,6 +1,6 @@
 const connectionManager = require('../database/connectionManager');
-const { getClientAdminModel } = require('../platform/models/ClientAdmin');
-const { getClientDatabaseMapModel } = require('../platform/models/ClientDatabaseMap');
+const { getModel: getClientAdminModel } = require('../platform/models/ClientAdmin');
+const { getModel: getClientDatabaseMapModel } = require('../platform/models/ClientDatabaseMap');
 const { getModel } = require('../database/modelFactory');
 const userSchema = require('../client/models/User').schema;
 const roleSchema = require('../client/models/Role').schema;
@@ -53,7 +53,7 @@ class ClientDatabaseService {
       });
 
       // Create ClientAdmin record in platform_db
-      const ClientAdmin = getClientAdminModel();
+      const ClientAdmin = await getClientAdminModel();
       const clientAdmin = await ClientAdmin.create({
         clientId,
         databaseName,
@@ -69,7 +69,7 @@ class ClientDatabaseService {
       });
 
       // Create ClientDatabaseMap entry
-      const ClientDatabaseMap = getClientDatabaseMapModel();
+      const ClientDatabaseMap = await getClientDatabaseMapModel();
       await ClientDatabaseMap.create({
         clientId,
         databaseName,
@@ -187,7 +187,7 @@ class ClientDatabaseService {
    */
   async getClientDatabase(clientId) {
     try {
-      const ClientAdmin = getClientAdminModel();
+      const ClientAdmin = await getClientAdminModel();
       const clientAdmin = await ClientAdmin.findOne({ clientId, isActive: true });
 
       if (!clientAdmin) {

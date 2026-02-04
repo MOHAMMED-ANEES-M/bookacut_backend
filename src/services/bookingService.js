@@ -208,8 +208,16 @@ class BookingService {
   /**
    * Mark booking as no-show
    */
-  async markNoShow(tenantId, shopId, bookingId) {
+  async markNoShow(tenantId, shopId, bookingId, databaseName) {
     try {
+      // Get models for the specific database
+      const { getModel } = require('../database/modelFactory');
+      const BookingSchema = require('../models/Booking').schema;
+      const SlotSchema = require('../models/Slot').schema;
+
+      const Booking = await getModel(databaseName, 'Booking', BookingSchema);
+      const Slot = await getModel(databaseName, 'Slot', SlotSchema);
+
       const booking = await Booking.findOne({
         _id: bookingId,
         tenantId,

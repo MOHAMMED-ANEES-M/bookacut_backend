@@ -86,8 +86,8 @@ clientAdminSchema.index({ isActive: 1 });
 /**
  * Get ClientAdmin model for platform_db
  */
-function getClientAdminModel() {
-  const connection = connectionManager.getPlatformDb();
+async function getClientAdminModel() {
+  const connection = await connectionManager.getPlatformDb();
   if (!connection.models.ClientAdmin) {
     return connection.model('ClientAdmin', clientAdminSchema);
   }

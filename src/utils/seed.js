@@ -1,7 +1,7 @@
 require('dotenv').config();
 const connectDB = require('../config/database');
 const connectionManager = require('../database/connectionManager');
-const { getPlatformAdminModel } = require('../platform/models/PlatformAdmin');
+const { getModel: getPlatformAdminModel } = require('../platform/models/PlatformAdmin');
 const clientDatabaseService = require('../services/clientDatabaseService');
 const moment = require('moment');
 
@@ -19,9 +19,9 @@ async function seed() {
     console.log('Starting seed process...');
 
     // Create platform super admin
-    const PlatformAdmin = getPlatformAdminModel();
+    const PlatformAdmin = await getPlatformAdminModel();
     const adminEmail = process.env.PLATFORM_ADMIN_EMAIL || 'admin@bookacut.com';
-    const adminPassword = process.env.PLATFORM_ADMIN_PASSWORD || 'ChangeThisPassword123!';
+    const adminPassword = process.env.PLATFORM_ADMIN_PASSWORD || 'Admin@bookacut';
 
     let platformAdmin = await PlatformAdmin.findOne({ email: adminEmail });
 
@@ -47,19 +47,22 @@ async function seed() {
 
     if (createSampleClient) {
       try {
-        const { getClientAdminModel } = require('../platform/models/ClientAdmin');
-        const ClientAdmin = getClientAdminModel();
+        const { getModel: getClientAdminModel } = require('../platform/models/ClientAdmin');
+        const ClientAdmin = await getClientAdminModel();
 
-        let sampleClient = await ClientAdmin.findOne({ email: 'sample@client.com' });
+        const clientAdminEmail = process.env.CLIENT_ADMIN_EMAIL || 'clientadmin@sample.com';
+        const clientAdminPassword = process.env.CLIENT_ADMIN_PASSWORD || 'ClientAdmin@sample';
+
+        let sampleClient = await ClientAdmin.findOne({ email: clientAdminEmail });
 
         if (!sampleClient) {
           // Create sample client database
           const result = await clientDatabaseService.createClientDatabase({
-            email: 'sample@client.com',
+            email: clientAdminEmail,
             firstName: 'Sample',
             lastName: 'Client',
             phone: '1234567890',
-            password: 'SamplePassword123!',
+            password: clientAdminPassword,
             maxShops: 5,
             maxStaff: 20,
             subscriptionPlan: 'premium',

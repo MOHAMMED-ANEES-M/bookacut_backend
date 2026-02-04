@@ -1,6 +1,6 @@
 const connectionManager = require('../database/connectionManager');
-const { getPlatformAdminModel } = require('../platform/models/PlatformAdmin');
-const { getClientAdminModel } = require('../platform/models/ClientAdmin');
+const { getModel: getPlatformAdminModel } = require('../platform/models/PlatformAdmin');
+const { getModel: getClientAdminModel } = require('../platform/models/ClientAdmin');
 const { getModel } = require('../database/modelFactory');
 const userSchema = require('../client/models/User').schema;
 const roleSchema = require('../client/models/Role').schema;
@@ -46,7 +46,7 @@ class AuthController {
       }
 
       // Try platform admin login first
-      const PlatformAdmin = getPlatformAdminModel();
+      const PlatformAdmin = await getPlatformAdminModel();
       let platformAdmin = await PlatformAdmin.findOne({ email }).select('+password');
 
       if (platformAdmin) {
@@ -86,7 +86,7 @@ class AuthController {
 
       // Try client user login
       // First, find client admin record in platform_db to get databaseName
-      const ClientAdmin = getClientAdminModel();
+      const ClientAdmin = await getClientAdminModel();
       const clientAdminRecord = await ClientAdmin.findOne({
         email: email.toLowerCase(),
         isActive: true,
@@ -249,7 +249,7 @@ class AuthController {
 
       // If platform admin
       if (req.user.role === 'platform_super_admin') {
-        const PlatformAdmin = getPlatformAdminModel();
+        const PlatformAdmin = await getPlatformAdminModel();
         const user = await PlatformAdmin.findById(req.user._id).select('-password');
 
         if (!user) {
