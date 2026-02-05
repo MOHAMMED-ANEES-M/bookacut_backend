@@ -60,7 +60,7 @@ const tenantSchema = new mongoose.Schema(
 );
 
 // Indexes for performance
-tenantSchema.index({ email: 1 });
+// tenantSchema.index({ email: 1 }); // Removed redundant index (covered by unique: true)
 tenantSchema.index({ isActive: 1 });
 
 module.exports = mongoose.model('Tenant', tenantSchema);

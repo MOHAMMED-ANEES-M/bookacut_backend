@@ -10,7 +10,7 @@ const roleSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Tenant',
       required: true,
-      index: true,
+      // index: true, // Removed redundant index
     },
     name: {
       type: String,

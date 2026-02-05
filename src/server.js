@@ -34,9 +34,27 @@ global.slotSocket = slotSocket;
 
 // Connect to MongoDB
 connectDB()
-  .then(() => {
+  .then((connection) => {
     // Start server
     server.listen(PORT, () => {
+      // Parse MongoDB URI for display
+      const mongoUri = process.env.MONGODB_URI || '';
+      const uriParts = mongoUri.split('@');
+      // Get DB name from connection object or fallback to parsing if needed
+      // DEBUG: Inspect connection object
+      // console.log('DEBUG: Connection keys:', Object.keys(connection || {}));
+      // console.log('DEBUG: connection.name:', connection?.name);
+      // console.log('DEBUG: connection.host:', connection?.host);
+      
+      const dbName = connection?.name || connection?.db?.databaseName || 'platform_db';
+      const host = connection?.host || (uriParts.length > 1 ? uriParts[1].split('/')[0] : 'localhost');
+
+      console.log('\n✨ Hey Bookacut✨');
+      console.log('🚀 Your Database is Now Live');
+      console.log(`🔗 Connected to: ${host}`);
+      console.log(`📂 Database Name: ${dbName}`);
+      console.log(`Server is running on port ${PORT}\n`);
+      
       logger.info(`Server running on port ${PORT}`);
       logger.info(`Environment: ${process.env.NODE_ENV || 'development'}`);
     });

@@ -10,18 +10,18 @@ const slotSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Tenant',
       required: [true, 'Tenant ID is required'],
-      index: true,
+      // index: true, // Removed redundant index
     },
     shopId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Shop',
       required: [true, 'Shop ID is required'],
-      index: true,
+      // index: true, // Removed redundant index
     },
     date: {
       type: Date,
       required: [true, 'Slot date is required'],
-      index: true,
+      // index: true, // Removed redundant index
     },
     startTime: {
       type: String,
@@ -51,7 +51,7 @@ const slotSchema = new mongoose.Schema(
       type: String,
       enum: ['available', 'blocked', 'full'],
       default: 'available',
-      index: true,
+      // index: true, // Removed redundant index
     },
     blockedBy: {
       type: mongoose.Schema.Types.ObjectId,

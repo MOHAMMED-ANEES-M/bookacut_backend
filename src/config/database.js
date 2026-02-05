@@ -6,8 +6,9 @@ const connectionManager = require('../database/connectionManager');
  */
 const connectDB = async () => {
   try {
-    await connectionManager.initialize();
+    const connection = await connectionManager.initialize();
     console.log(`Database connection manager initialized`);
+    return connection;
   } catch (error) {
     console.error(`Error initializing database connection manager: ${error.message}`);
     process.exit(1);

@@ -30,16 +30,13 @@ class ConnectionManager {
       // Connect to platform_db by default
       const platformUri = `${baseUri}/platform_db${this.connectionString.includes('?') ? '?' + this.connectionString.split('?')[1] : ''}`;
 
-      this.mainConnection = await mongoose.createConnection(platformUri, {
-        useNewUrlParser: true,
-        useUnifiedTopology: true,
-      });
+      this.mainConnection = await mongoose.createConnection(platformUri);
 
       // Store platform_db connection
       this.connections.set('platform_db', this.mainConnection);
 
-      console.log(`MongoDB Connection Manager initialized`);
-      console.log(`Platform database connected: platform_db`);
+      // console.log(`MongoDB Connection Manager initialized`);
+      // console.log(`Platform database connected: platform_db`);
 
       // Handle connection events
       this.mainConnection.on('error', (err) => {
@@ -81,10 +78,7 @@ class ConnectionManager {
 
       const dbUri = `${baseUri}/${databaseName}${queryParams}`;
 
-      const connection = await mongoose.createConnection(dbUri, {
-        useNewUrlParser: true,
-        useUnifiedTopology: true,
-      });
+      const connection = await mongoose.createConnection(dbUri);
 
       // Handle connection events
       connection.on('error', (err) => {

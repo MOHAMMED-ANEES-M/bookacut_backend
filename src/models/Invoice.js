@@ -10,13 +10,13 @@ const invoiceSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Tenant',
       required: [true, 'Tenant ID is required'],
-      index: true,
+      // index: true, // Removed redundant index
     },
     shopId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Shop',
       required: [true, 'Shop ID is required'],
-      index: true,
+      // index: true, // Removed redundant index
     },
     bookingId: {
       type: mongoose.Schema.Types.ObjectId,
@@ -28,7 +28,7 @@ const invoiceSchema = new mongoose.Schema(
       type: String,
       required: true,
       unique: true,
-      index: true,
+      // index: true, // Removed redundant index (covered by unique)
     },
     customerId: {
       type: mongoose.Schema.Types.ObjectId,
@@ -80,7 +80,7 @@ const invoiceSchema = new mongoose.Schema(
       type: String,
       enum: ['pending', 'partial', 'paid', 'cancelled', 'overpaid'],
       default: 'pending',
-      index: true,
+      // index: true, // Removed redundant index
     },
     totalPaidAmount: {
       type: Number,
@@ -100,7 +100,7 @@ const invoiceSchema = new mongoose.Schema(
     paymentMethod: {
       type: String,
       enum: ['cash', 'card', 'upi', 'online', 'other'],
-      index: true,
+      // index: true, // Removed redundant index
       // Deprecated: Use Payment model for multiple payment methods
     },
     notes: {

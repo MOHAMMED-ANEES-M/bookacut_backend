@@ -10,25 +10,25 @@ const bookingSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Tenant',
       required: [true, 'Tenant ID is required'],
-      index: true,
+      // index: true, // Removed redundant index
     },
     shopId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Shop',
       required: [true, 'Shop ID is required'],
-      index: true,
+      // index: true, // Removed redundant index
     },
     slotId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Slot',
       required: [true, 'Slot ID is required'],
-      index: true,
+      // index: true, // Removed redundant index
     },
     customerId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
       required: [true, 'Customer ID is required'],
-      index: true,
+      // index: true, // Removed redundant index
     },
     serviceId: {
       type: mongoose.Schema.Types.ObjectId,
@@ -49,7 +49,7 @@ const bookingSchema = new mongoose.Schema(
       type: String,
       enum: ['pending', 'confirmed', 'arrived', 'in_progress', 'completed', 'no_show', 'rejected', 'cancelled'],
       default: 'confirmed',
-      index: true,
+      // index: true, // Removed redundant index
     },
     originalPrice: {
       type: Number,

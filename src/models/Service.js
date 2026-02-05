@@ -10,13 +10,13 @@ const serviceSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Tenant',
       required: [true, 'Tenant ID is required'],
-      index: true,
+      // index: true, // Removed redundant index
     },
     shopId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Shop',
       required: [true, 'Shop ID is required'],
-      index: true,
+      // index: true, // Removed redundant index
     },
     name: {
       type: String,
@@ -30,7 +30,7 @@ const serviceSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'ServiceCategory',
       required: [true, 'Service category is required'],
-      index: true,
+      // index: true, // Removed redundant index
     },
     duration: {
       type: Number,

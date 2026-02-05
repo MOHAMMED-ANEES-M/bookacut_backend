@@ -37,16 +37,15 @@ class EmailService {
           auth: emailConfig.auth,
         });
 
-        // Verify connection
-        this.transporter.verify((error, success) => {
-          if (error) {
-            console.error('Email service configuration error:', error);
-          } else {
-            console.log('Email service is ready to send messages');
-          }
-        });
+        // Skip verification on startup to prevent ECONNRESET crashes
+        // The connection will be verified when sending emails
+        console.log('Email service initialized');
       } else {
-        console.warn('Email service not configured. SMTP credentials missing.');
+        if (process.env.NODE_ENV !== 'production') {
+          console.warn('⚠️  Email service not configured. SMTP credentials missing. (Emails will be logged, not sent)');
+        } else {
+          console.warn('⚠️  Email service not configured in PRODUCTION. SMTP credentials missing.');
+        }
       }
     } catch (error) {
       console.error('Error initializing email service:', error);
@@ -68,6 +67,10 @@ class EmailService {
     const { to, customerName, invoiceNumber, pdfPath, invoiceData, shopData } = options;
 
     if (!this.transporter) {
+      if (process.env.NODE_ENV !== 'production') {
+        console.log(`[DEV] Mock sending invoice email to ${to}: Invoice ${invoiceNumber}`);
+        return { success: true, message: 'Dev: Email mocked', recipient: to };
+      }
       throw new Error('Email service is not configured. Please set SMTP credentials in environment variables.');
     }
 
@@ -206,6 +209,10 @@ class EmailService {
     const { to, subject, html, text, attachments } = options;
 
     if (!this.transporter) {
+      if (process.env.NODE_ENV !== 'production') {
+        console.log(`[DEV] Mock sending email to ${to}: ${subject}`);
+        return { success: true, message: 'Dev: Email mocked', recipient: to };
+      }
       throw new Error('Email service is not configured. Please set SMTP credentials in environment variables.');
     }
 

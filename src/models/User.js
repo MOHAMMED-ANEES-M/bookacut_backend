@@ -10,7 +10,7 @@ const userSchema = new mongoose.Schema(
     tenantId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Tenant',
-      index: true,
+      // index: true, // Removed redundant index (covered by compound indexes)
       // Nullable for platform super admin
     },
     email: {
@@ -18,7 +18,7 @@ const userSchema = new mongoose.Schema(
       required: [true, 'Email is required'],
       lowercase: true,
       trim: true,
-      index: true,
+      // index: true, // Removed redundant index (covered by compound indexes)
     },
     password: {
       type: String,
@@ -46,7 +46,7 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: [true, 'Role is required'],
       enum: ['platform_super_admin', 'client_admin', 'staff', 'customer'],
-      index: true,
+      // index: true, // Removed redundant index (covered by compound indexes)
     },
     roleId: {
       type: mongoose.Schema.Types.ObjectId,
