@@ -15,9 +15,17 @@ const { validate } = require('../middlewares/validator');
 
 // Public routes (optional auth for tenant context)
 router.use(optionalAuth);
+
+// Get All Shops (Public) - Global, no specific tenant context required yet
+router.get('/shops', customerController.getAllShops.bind(customerController));
+
 router.use(extractTenantId);
 
-// Get Shop Details (Public)
+// Get Shop Details (Public) - Specific tenant required (extracted from shop context usually, or URL)
+// Note: getShopDetails usually needs tenantId to find the shop in the correct DB.
+// But wait, getShopDetails logic in controller looks up shop by ID... 
+// actually controller uses req.params.shopId and req.tenantId. 
+// So for getShopDetails we DO need tenantId.
 router.get('/shops/:shopId', customerController.getShopDetails.bind(customerController));
 
 // Get Shop Services (Public)

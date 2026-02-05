@@ -40,7 +40,7 @@ class AuthController {
    */
   async login(req, res, next) {
     try {
-      const { email, password } = req.body;
+      const { email, password, databaseName } = req.body;
 
       if (!email || !password) {
         throw new ValidationError('Email and password are required');
@@ -89,8 +89,75 @@ class AuthController {
         return;
       }
 
-      // Try client user login
-      // First, find client admin record in platform_db to get databaseName
+      // If databaseName is provided, try logging in directly to that client database (Customer/Staff)
+      if (databaseName) {
+         try {
+             // Get connection to client database
+             const clientDb = await connectionManager.getDb(databaseName);
+             
+             // Get User model from client database
+             const User = await getModel(databaseName, 'User', userSchema);
+
+             // Find user in client database
+             const user = await User.findOne({ email: email.toLowerCase() }).select('+password');
+
+             if (user) {
+                 if (!user.isActive) {
+                   throw new AuthenticationError('Account is inactive');
+                 }
+
+                 // Verify password
+                 const isPasswordValid = await user.comparePassword(password);
+
+                 if (!isPasswordValid) {
+                   throw new AuthenticationError('Invalid credentials');
+                 }
+
+                 // Update last login
+                 user.lastLogin = new Date();
+                 await user.save();
+
+                 // Get role permissions
+                 const Role = await getModel(databaseName, 'Role', roleSchema);
+                 let role = null;
+                 if (user.roleId) {
+                   role = await Role.findById(user.roleId);
+                 } else {
+                   role = await Role.findOne({ name: user.role });
+                 }
+
+                 // Generate token with databaseName
+                 const token = this.generateToken(user._id, user.role, databaseName);
+
+                 res.json({
+                   success: true,
+                   token,
+                   user: {
+                     id: user._id,
+                     email: user.email,
+                     firstName: user.firstName,
+                     lastName: user.lastName,
+                     role: user.role,
+                     databaseName: databaseName,
+                     permissions: role?.permissions || [],
+                   },
+                 });
+                 return;
+             }
+         } catch (error) {
+             // If specific database login fails (e.g. user not found), fall through to global lookup 
+             // but strictly speaking if they provided a DB name they probably intend to login there.
+             // However, let's log and maybe fall through or just throw if user not found? 
+             // Logic: If user provides DB name, they expect to be in that DB. 
+             // But if invalid credentials, we should throw. 
+             // If user NOT found, maybe it's a wrong email for that DB.
+             // Let's rethrow if it's AuthenticationError, otherwise log and continue (though unlikely to find them elsewhere if they intend specific DB).
+             if (error instanceof AuthenticationError) throw error;
+             console.error('Specific database login error', error);
+         }
+      }
+
+      // Default: Try client user login via global lookup (Client Admin)
       const ClientAdmin = await getClientAdminModel();
       const clientAdminRecord = await ClientAdmin.findOne({
         email: email.toLowerCase(),

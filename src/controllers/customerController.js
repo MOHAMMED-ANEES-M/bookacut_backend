@@ -14,6 +14,55 @@ const { getPaginationParams, formatPaginatedResponse } = require('../utils/pagin
  */
 class CustomerController {
   /**
+   * Get All Shops (Public)
+   * Aggregates shops from all active tenants
+   */
+  async getAllShops(req, res, next) {
+    try {
+      const { getClientAdminModel } = require('../platform/models/ClientAdmin');
+      const connectionManager = require('../database/connectionManager');
+      const { getModel } = require('../database/modelFactory');
+      const shopSchema = require('../client/models/Shop').schema;
+
+      const ClientAdmin = await getClientAdminModel();
+      const activeTenants = await ClientAdmin.find({ isActive: true });
+
+      let allShops = [];
+
+      // Iterate through tenants and collect shops
+      // Note: In a production system with many tenants, this should be cached or indexed globally
+      for (const tenant of activeTenants) {
+        try {
+          const Shop = await getModel(tenant.databaseName, 'Shop', shopSchema);
+          const shops = await Shop.find({ isActive: true })
+            .select('name address phone email description images operatingHours');
+          
+          const shopsWithContext = shops.map(shop => ({
+            ...shop.toObject(),
+            tenantId: tenant._id,
+            databaseName: tenant.databaseName,
+            tenantName: `${tenant.firstName} ${tenant.lastName}`
+          }));
+
+          allShops = [...allShops, ...shopsWithContext];
+        } catch (err) {
+          logger.error(`Error fetching shops for tenant ${tenant.databaseName}:`, err.message);
+          // Continue to next tenant even if one fails
+        }
+      }
+
+      res.json({
+        success: true,
+        shops: allShops,
+      });
+      
+      logger.info(`CustomerController.getAllShops: Returned ${allShops.length} shops from ${activeTenants.length} tenants`);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
    * Get Shop Services
    */
   async getShopServices(req, res, next) {
