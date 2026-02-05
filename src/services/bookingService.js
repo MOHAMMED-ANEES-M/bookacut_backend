@@ -1,4 +1,5 @@
 const Booking = require('../models/Booking');
+const logger = require('../utils/logger');
 const Slot = require('../models/Slot');
 const Service = require('../models/Service');
 const User = require('../models/User');
@@ -16,6 +17,8 @@ class BookingService {
    */
   async createOnlineBooking(tenantId, shopId, slotId, serviceId, customerId) {
     try {
+      logger.info(`BookingService.createOnlineBooking: Creating online booking for shopId=${shopId}, slotId=${slotId}`);
+
       // Validate slot exists and is available
       const slot = await Slot.findOne({
         _id: slotId,
@@ -81,6 +84,8 @@ class BookingService {
       // Update slot booked count
       await slot.updateBookedCount();
 
+      logger.info(`BookingService.createOnlineBooking: Successfully created booking ID=${booking._id}`);
+
       return booking;
     } catch (error) {
       throw error;
@@ -92,6 +97,8 @@ class BookingService {
    */
   async createWalkInBooking(tenantId, shopId, slotId, serviceId, customerData, staffId, price) {
     try {
+      logger.info(`BookingService.createWalkInBooking: Creating walk-in booking for shopId=${shopId}, customer=${customerData.email}`);
+
       // Validate slot
       const slot = await Slot.findOne({
         _id: slotId,
@@ -167,6 +174,10 @@ class BookingService {
         await global.slotSocket.notifyBookingChange(tenantId, shopId, booking);
       }
 
+      
+
+      logger.info(`BookingService.createWalkInBooking: Successfully created walk-in booking ID=${booking._id}`);
+
       return booking;
     } catch (error) {
       throw error;
@@ -210,6 +221,8 @@ class BookingService {
    */
   async markNoShow(tenantId, shopId, bookingId, databaseName) {
     try {
+      logger.info(`BookingService.markNoShow: Marking bookingId=${bookingId} as no-show`);
+
       // Get models for the specific database
       const { getModel } = require('../database/modelFactory');
       const BookingSchema = require('../models/Booking').schema;

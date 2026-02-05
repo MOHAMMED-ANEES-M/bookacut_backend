@@ -1,4 +1,5 @@
 const { getModel } = require('../database/modelFactory');
+const logger = require('../utils/logger');
 const slotSchema = require('../client/models/Slot').schema;
 const bookingSchema = require('../client/models/Booking').schema;
 const moment = require('moment');
@@ -21,6 +22,8 @@ class SlotBlockingService {
    */
   async blockSlot(databaseName, shopId, date, slotTime, adminUserId, reason = null) {
     try {
+      logger.info(`SlotBlockingService.blockSlot: Blocking slot at ${slotTime} on ${date} for shopId=${shopId}, db=${databaseName}`);
+
       // Get models for this database
       const Slot = await getModel(databaseName, 'Slot', slotSchema);
       const Booking = await getModel(databaseName, 'Booking', bookingSchema);
@@ -91,6 +94,8 @@ class SlotBlockingService {
         console.log(`Block reason: ${reason}`);
       }
 
+      logger.info(`SlotBlockingService.blockSlot: Successfully blocked slot. Cancelled ${cancelledBookings.length} bookings.`);
+
       return {
         slot,
         cancelledBookings: cancelledBookings.map((b) => ({
@@ -116,6 +121,8 @@ class SlotBlockingService {
    */
   async unblockSlot(databaseName, shopId, date, slotTime) {
     try {
+      logger.info(`SlotBlockingService.unblockSlot: Unblocking slot at ${slotTime} on ${date} for shopId=${shopId}, db=${databaseName}`);
+
       // Get Slot model for this database
       const Slot = await getModel(databaseName, 'Slot', slotSchema);
 
@@ -164,6 +171,8 @@ class SlotBlockingService {
 
       // Log the unblocking action
       console.log(`Slot unblocked: ${databaseName} - Shop ${shopId} - ${date} ${slotTime}`);
+      
+      logger.info(`SlotBlockingService.unblockSlot: Successfully unblocked slot.`);
 
       return slot;
     } catch (error) {

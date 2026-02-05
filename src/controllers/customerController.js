@@ -1,5 +1,6 @@
 const Service = require('../models/Service');
 const Shop = require('../models/Shop');
+const logger = require('../utils/logger');
 const slotService = require('../services/slotService');
 const bookingService = require('../services/bookingService');
 const { NotFoundError, ValidationError } = require('../utils/errors');
@@ -20,6 +21,8 @@ class CustomerController {
       const { shopId } = req.params;
       const tenantId = req.tenantId;
 
+      logger.info(`CustomerController.getShopServices: Fetching services for shopId=${shopId}, tenantId=${tenantId}`);
+
       const { page, limit, skip } = getPaginationParams(req.query);
 
       const query = {
@@ -34,6 +37,8 @@ class CustomerController {
         .limit(limit);
 
       const total = await Service.countDocuments(query);
+
+      logger.info(`CustomerController.getShopServices: Found ${services.length} services out of total ${total}`);
 
       res.json(formatPaginatedResponse(services, total, { page, limit }, 'services'));
     } catch (error) {
@@ -50,6 +55,8 @@ class CustomerController {
       const { startDate, endDate } = req.query;
       const tenantId = req.tenantId;
 
+      logger.info(`CustomerController.getAvailableSlots: Getting slots for shopId=${shopId}, range=${startDate || 'today'} to ${endDate || 'default'}`);
+
       // Default to today and booking advance days
       const today = moment().startOf('day');
       const defaultEndDate = moment().add(BOOKING_ADVANCE_DAYS, 'days');
@@ -65,6 +72,8 @@ class CustomerController {
         success: true,
         slots,
       });
+
+      logger.info(`CustomerController.getAvailableSlots: Returned ${slots.length} daily slot groups`);
     } catch (error) {
       next(error);
     }
@@ -78,6 +87,8 @@ class CustomerController {
       const { shopId } = req.params;
       const { slotId, serviceId } = req.body;
       const tenantId = req.tenantId;
+
+      logger.info(`CustomerController.bookSlot: Initiating booking for shopId=${shopId}, slotId=${slotId}, serviceId=${serviceId}`);
 
       if (!slotId || !serviceId) {
         throw new ValidationError('Slot ID and service ID are required');
@@ -99,6 +110,8 @@ class CustomerController {
         success: true,
         booking,
       });
+
+      logger.info(`CustomerController.bookSlot: Successfully created booking with ID=${booking._id}`);
     } catch (error) {
       next(error);
     }
@@ -110,6 +123,8 @@ class CustomerController {
   async getBookingHistory(req, res, next) {
     try {
       const tenantId = req.tenantId;
+
+      logger.info(`CustomerController.getBookingHistory: Fetching history for customerId=${req.user?._id}`);
 
       if (!req.user || req.user.role !== 'customer') {
         throw new ValidationError('Customer authentication required');
@@ -124,6 +139,8 @@ class CustomerController {
       );
 
       res.json(formatPaginatedResponse(bookings, total, { page, limit }, 'bookings'));
+
+      logger.info(`CustomerController.getBookingHistory: Returned ${bookings.length} bookings`);
     } catch (error) {
       next(error);
     }
@@ -137,6 +154,8 @@ class CustomerController {
       const { shopId, bookingId } = req.params;
       const { reason } = req.body;
       const tenantId = req.tenantId;
+
+      logger.info(`CustomerController.cancelBooking: Attempting to cancel bookingId=${bookingId} for shopId=${shopId}`);
 
       if (!req.user || req.user.role !== 'customer') {
         throw new ValidationError('Customer authentication required');
@@ -167,6 +186,8 @@ class CustomerController {
         success: true,
         booking: cancelledBooking,
       });
+
+      logger.info(`CustomerController.cancelBooking: Successfully cancelled bookingId=${bookingId}`);
     } catch (error) {
       next(error);
     }
@@ -179,6 +200,8 @@ class CustomerController {
     try {
       const { shopId } = req.params;
       const tenantId = req.tenantId;
+
+      logger.info(`CustomerController.getShopDetails: Fetching details for shopId=${shopId}`);
 
       const shop = await Shop.findOne({
         _id: shopId,
@@ -194,6 +217,8 @@ class CustomerController {
         success: true,
         shop,
       });
+
+      logger.info(`CustomerController.getShopDetails: Successfully returned shop info for "${shop.name}"`);
     } catch (error) {
       next(error);
     }

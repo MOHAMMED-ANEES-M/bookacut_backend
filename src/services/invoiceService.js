@@ -1,4 +1,5 @@
 const Invoice = require('../models/Invoice');
+const logger = require('../utils/logger');
 const Payment = require('../models/Payment');
 const Booking = require('../models/Booking');
 const ShopSettings = require('../models/ShopSettings');
@@ -16,6 +17,8 @@ class InvoiceService {
    */
   async generateInvoice(tenantId, shopId, bookingId) {
     try {
+      logger.info(`InvoiceService.generateInvoice: Generating invoice for bookingId=${bookingId}, shopId=${shopId}`);
+
       // Check if invoice already exists
       const existingInvoice = await Invoice.findOne({ bookingId });
 
@@ -107,6 +110,8 @@ class InvoiceService {
     try {
       const { amount, paymentMethod, paymentReference, notes, paidBy } = paymentData;
 
+      logger.info(`InvoiceService.addPayment: Adding payment of ${amount} to invoiceId=${invoiceId} via ${paymentMethod}`);
+
       if (!amount || amount <= 0) {
         throw new Error('Payment amount must be greater than 0');
       }
@@ -182,6 +187,8 @@ class InvoiceService {
         payment,
         invoice,
       };
+
+      logger.info(`InvoiceService.addPayment: Successfully added payment ID=${payment._id}. Invoice Status: ${invoice.status}`);
     } catch (error) {
       throw error;
     }
@@ -326,6 +333,8 @@ class InvoiceService {
    */
   async getRevenueStats(tenantId, shopId, startDate, endDate) {
     try {
+      logger.info(`InvoiceService.getRevenueStats: Generating revenue stats for shopId=${shopId} from ${startDate} to ${endDate}`);
+
       const invoices = await Invoice.find({
         tenantId,
         shopId,
@@ -358,6 +367,8 @@ class InvoiceService {
    */
   async getStaffCommissionReport(tenantId, shopId, staffId, startDate, endDate) {
     try {
+      logger.info(`InvoiceService.getStaffCommissionReport: Generating commission report for staffId=${staffId}`);
+
       const query = {
         tenantId,
         shopId,
@@ -405,6 +416,8 @@ class InvoiceService {
    */
   async getShopCommissionReport(tenantId, shopId, startDate, endDate) {
     try {
+      logger.info(`InvoiceService.getShopCommissionReport: Generating shop commission report for shopId=${shopId}`);
+
       const query = {
         tenantId,
         shopId,

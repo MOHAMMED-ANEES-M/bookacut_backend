@@ -1,4 +1,5 @@
 const { getModel } = require('../database/modelFactory');
+const logger = require('../utils/logger');
 const shopSchema = require('../client/models/Shop').schema;
 const userSchema = require('../client/models/User').schema;
 const staffProfileSchema = require('../client/models/StaffProfile').schema;
@@ -28,6 +29,8 @@ class ClientAdminController {
     try {
       const { name, address, phone, email, workingHours, slotDuration } = req.body;
       const tenantId = req.tenantId;
+
+      logger.info(`ClientAdminController.createShop: Creating shop "${name}" for tenantId=${tenantId}`);
 
       if (!name || !phone) {
         throw new ValidationError('Shop name and phone are required');
@@ -74,6 +77,8 @@ class ClientAdminController {
         success: true,
         shop,
       });
+
+      logger.info(`ClientAdminController.createShop: Successfully created shop ID=${shop._id}`);
     } catch (error) {
       next(error);
     }
@@ -88,6 +93,8 @@ class ClientAdminController {
       const updates = req.body;
       const tenantId = req.tenantId;
 
+      logger.info(`ClientAdminController.updateShop: Updating shopId=${shopId} for tenantId=${tenantId}`);
+
       const shop = await Shop.findOne({ _id: shopId, tenantId });
 
       if (!shop) {
@@ -101,6 +108,8 @@ class ClientAdminController {
         success: true,
         shop,
       });
+
+      logger.info(`ClientAdminController.updateShop: Successfully updated shopId=${shopId}`);
     } catch (error) {
       next(error);
     }
@@ -159,6 +168,8 @@ class ClientAdminController {
       const { shopId } = req.params;
       const { email, password, phone, firstName, lastName, specialization, hourlyRate, commissionRate } = req.body;
       const tenantId = req.tenantId;
+
+      logger.info(`ClientAdminController.addStaff: Adding staff "${firstName} ${lastName}" to shopId=${shopId}`);
 
       if (!email || !password || !phone || !firstName || !lastName) {
         throw new ValidationError('All required fields must be provided');
@@ -261,6 +272,8 @@ class ClientAdminController {
         success: true,
         staff: staffProfile,
       });
+
+      logger.info(`ClientAdminController.addStaff: Successfully added/reactivated staff ID=${staffProfile?._id || user?._id}`);
     } catch (error) {
       next(error);
     }
@@ -298,6 +311,8 @@ class ClientAdminController {
       const { shopId, staffId } = req.params;
       const tenantId = req.tenantId;
 
+      logger.info(`ClientAdminController.removeStaff: Removing staffId=${staffId} from shopId=${shopId}`);
+
       const staff = await StaffProfile.findOne({
         _id: staffId,
         tenantId,
@@ -319,6 +334,8 @@ class ClientAdminController {
         success: true,
         message: 'Staff removed successfully',
       });
+
+      logger.info(`ClientAdminController.removeStaff: Successfully removed staffId=${staffId}`);
     } catch (error) {
       next(error);
     }
@@ -451,6 +468,8 @@ class ClientAdminController {
       const { shopId } = req.params;
       const { name, description } = req.body;
       const tenantId = req.tenantId;
+
+      logger.info(`ClientAdminController.createServiceCategory: Creating category "${name}" for shopId=${shopId}`);
       const databaseName = req.user.databaseName;
 
       if (!name) {
@@ -470,6 +489,8 @@ class ClientAdminController {
         success: true,
         category,
       });
+
+      logger.info(`ClientAdminController.createServiceCategory: Successfully created category ID=${category._id}`);
     } catch (error) {
       next(error);
     }
@@ -576,6 +597,8 @@ class ClientAdminController {
       const { shopId } = req.params;
       const { name, description, categoryId, duration, price } = req.body;
       const tenantId = req.tenantId;
+
+      logger.info(`ClientAdminController.createService: Creating service "${name}" for shopId=${shopId}`);
       const databaseName = req.user.databaseName;
 
       if (!name || !duration || !price || !categoryId) {
@@ -605,6 +628,8 @@ class ClientAdminController {
         success: true,
         service,
       });
+
+      logger.info(`ClientAdminController.createService: Successfully created service ID=${service._id}`);
     } catch (error) {
       next(error);
     }
@@ -724,6 +749,8 @@ class ClientAdminController {
       const { shopId } = req.params;
       const { date, slotTime, reason } = req.body;
       const databaseName = req.user.databaseName;
+
+      logger.info(`ClientAdminController.blockSlot: Blocking slot at ${slotTime} on ${date} for shopId=${shopId}`);
 
       if (!date || !slotTime) {
         throw new ValidationError('Date and slotTime are required');

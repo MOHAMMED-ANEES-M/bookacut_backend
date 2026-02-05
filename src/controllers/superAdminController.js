@@ -1,4 +1,5 @@
 const { getClientAdminModel } = require('../platform/models/ClientAdmin');
+const logger = require('../utils/logger');
 const { getClientDatabaseMapModel } = require('../platform/models/ClientDatabaseMap');
 const connectionManager = require('../database/connectionManager');
 const { getModel } = require('../database/modelFactory');
@@ -20,6 +21,8 @@ class SuperAdminController {
     try {
       const { page, limit, skip } = getPaginationParams(req.query);
       const { search, status } = req.query;
+
+      logger.info(`SuperAdminController.getAllTenants: Fetching all tenants. Search="${search || ''}", Status="${status || 'all'}"`);
 
       // Build query
       const query = {};
@@ -92,6 +95,8 @@ class SuperAdminController {
       const total = await ClientAdmin.countDocuments(query);
 
       res.json(formatPaginatedResponse(clientsWithShopCounts, total, { page, limit }, 'tenants'));
+
+      logger.info(`SuperAdminController.getAllTenants: Returned ${clientsWithShopCounts.length} tenants out of total ${total}`);
     } catch (error) {
       next(error);
     }
@@ -185,6 +190,8 @@ class SuperAdminController {
         receiptNumber,
       } = req.body;
 
+      logger.info(`SuperAdminController.recordPayment: Recording payment of ${amount} ${currency} for tenantId=${tenantId}`);
+
       if (!amount || !paymentMethod) {
         throw new ValidationError('Amount and payment method are required');
       }
@@ -233,6 +240,8 @@ class SuperAdminController {
           subscriptionExpiresAt: newExpiry,
         },
       });
+
+      logger.info(`SuperAdminController.recordPayment: Successfully recorded payment ID=${payment._id}. New expiry: ${newExpiry}`);
     } catch (error) {
       next(error);
     }
@@ -381,6 +390,8 @@ class SuperAdminController {
         adminPhone,
       } = req.body;
 
+      logger.info(`SuperAdminController.createTenant: Creating new tenant for email=${email}`);
+
       if (!email || !phone) {
         throw new ValidationError('Email and phone are required');
       }
@@ -440,6 +451,8 @@ class SuperAdminController {
           phone: clientAdmin.phone,
         },
       });
+
+      logger.info(`SuperAdminController.createTenant: Successfully created tenant with databaseName=${databaseName}`);
     } catch (error) {
       next(error);
     }

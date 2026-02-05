@@ -1,4 +1,5 @@
 const connectionManager = require('../database/connectionManager');
+const logger = require('../utils/logger');
 const { getModel: getPlatformAdminModel } = require('../platform/models/PlatformAdmin');
 const { getModel: getClientAdminModel } = require('../platform/models/ClientAdmin');
 const { getModel } = require('../database/modelFactory');
@@ -45,6 +46,8 @@ class AuthController {
         throw new ValidationError('Email and password are required');
       }
 
+      logger.info(`AuthController.login: Attempting login for email=${email}`);
+
       // Try platform admin login first
       const PlatformAdmin = await getPlatformAdminModel();
       let platformAdmin = await PlatformAdmin.findOne({ email }).select('+password');
@@ -81,6 +84,8 @@ class AuthController {
             permissions: Object.values(PERMISSIONS), // Platform admin has all permissions
           },
         });
+
+        logger.info(`AuthController.login: Platform super admin login successful for email=${email}`);
         return;
       }
 
@@ -165,6 +170,8 @@ class AuthController {
       if (!email || !password || !phone || !firstName || !lastName || !databaseName) {
         throw new ValidationError('All fields are required');
       }
+
+      logger.info(`AuthController.registerCustomer: Registering customer "${firstName} ${lastName}" (${email}) in database=${databaseName}`);
 
       // Verify database exists
       const exists = await connectionManager.databaseExists(databaseName);

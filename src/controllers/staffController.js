@@ -1,5 +1,6 @@
 const Booking = require('../models/Booking');
 const StaffProfile = require('../models/StaffProfile');
+const logger = require('../utils/logger');
 const Shop = require('../models/Shop');
 const bookingService = require('../services/bookingService');
 const invoiceService = require('../services/invoiceService');
@@ -22,6 +23,8 @@ class StaffController {
       const { shopId } = req.params;
       const { status, date, staffId } = req.query;
       const tenantId = req.tenantId;
+
+      logger.info(`StaffController.getShopBookings: Fetching bookings for shopId=${shopId}, tenantId=${tenantId}, filters=${JSON.stringify({ status, date, staffId })}`);
 
       // Get staff profile to ensure access
       const staffProfile = await StaffProfile.findOne({
@@ -51,6 +54,8 @@ class StaffController {
       );
 
       res.json(formatPaginatedResponse(bookings, total, { page, limit }, 'bookings'));
+
+      logger.info(`StaffController.getShopBookings: Returned ${bookings.length} bookings`);
     } catch (error) {
       next(error);
     }
@@ -64,6 +69,8 @@ class StaffController {
       const { shopId } = req.params;
       const { slotId, serviceId, customerData, price } = req.body;
       const tenantId = req.tenantId;
+
+      logger.info(`StaffController.createWalkIn: Creating walk-in for shopId=${shopId}, tenantId=${tenantId}, customer=${customerData?.firstName} ${customerData?.lastName}`);
 
       // Get staff profile
       const staffProfile = await StaffProfile.findOne({
@@ -95,6 +102,8 @@ class StaffController {
         success: true,
         booking,
       });
+
+      logger.info(`StaffController.createWalkIn: Successfully created walk-in ID=${booking._id}`);
     } catch (error) {
       next(error);
     }
@@ -108,12 +117,15 @@ class StaffController {
       const { shopId, bookingId } = req.params;
       const tenantId = req.tenantId;
 
+      logger.info(`StaffController.markArrived: Marking bookingId=${bookingId} as arrived for shopId=${shopId}`);
+
       const booking = await bookingService.markArrived(tenantId, shopId, bookingId);
 
       res.json({
         success: true,
         booking,
       });
+      logger.info(`StaffController.markArrived: Successfully updated bookingId=${bookingId} status to arrived`);
     } catch (error) {
       next(error);
     }
@@ -127,12 +139,15 @@ class StaffController {
       const { shopId, bookingId } = req.params;
       const tenantId = req.tenantId;
 
+      logger.info(`StaffController.markNoShow: Marking bookingId=${bookingId} as no-show for shopId=${shopId}`);
+
       const booking = await bookingService.markNoShow(tenantId, shopId, bookingId);
 
       res.json({
         success: true,
         booking,
       });
+      logger.info(`StaffController.markNoShow: Successfully updated bookingId=${bookingId} status to no-show`);
     } catch (error) {
       next(error);
     }
@@ -145,6 +160,8 @@ class StaffController {
     try {
       const { shopId, bookingId } = req.params;
       const tenantId = req.tenantId;
+
+      logger.info(`StaffController.startService: Starting service for bookingId=${bookingId} at shopId=${shopId}`);
 
       // Get staff profile
       const staffProfile = await StaffProfile.findOne({
@@ -182,6 +199,8 @@ class StaffController {
       const { shopId, bookingId } = req.params;
       const tenantId = req.tenantId;
 
+      logger.info(`StaffController.completeService: Completing service for bookingId=${bookingId} at shopId=${shopId}`);
+
       const booking = await bookingService.completeService(tenantId, shopId, bookingId);
 
       // Auto-generate invoice
@@ -192,6 +211,8 @@ class StaffController {
         booking,
         invoice,
       });
+
+      logger.info(`StaffController.completeService: Service completed and invoice generated (ID=${invoice?._id})`);
     } catch (error) {
       next(error);
     }
@@ -255,6 +276,8 @@ class StaffController {
       const { shopId, invoiceId } = req.params;
       const { amount, paymentMethod, paymentReference, notes } = req.body;
       const tenantId = req.tenantId;
+
+      logger.info(`StaffController.addPayment: Adding payment of ${amount} to invoiceId=${invoiceId} via ${paymentMethod}`);
       const paidBy = req.user._id;
 
       if (!amount || amount <= 0) {
@@ -281,6 +304,8 @@ class StaffController {
           ? 'Invoice fully paid successfully' 
           : 'Partial payment added successfully',
       });
+
+      logger.info(`StaffController.addPayment: Payment added. Invoice status: ${result.invoice.status}`);
     } catch (error) {
       next(error);
     }

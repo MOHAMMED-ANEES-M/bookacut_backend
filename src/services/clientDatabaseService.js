@@ -1,4 +1,5 @@
 const connectionManager = require('../database/connectionManager');
+const logger = require('../utils/logger');
 const { getModel: getClientAdminModel } = require('../platform/models/ClientAdmin');
 const { getModel: getClientDatabaseMapModel } = require('../platform/models/ClientDatabaseMap');
 const { getModel } = require('../database/modelFactory');
@@ -35,6 +36,8 @@ class ClientDatabaseService {
   async createClientDatabase(clientAdminData) {
     try {
       const { email, firstName, lastName, phone, password, maxShops, maxStaff, subscriptionPlan, subscriptionExpiresAt } = clientAdminData;
+
+      logger.info(`ClientDatabaseService.createClientDatabase: Creating database for email=${email}`);
 
       // Generate unique client ID and database name
       const clientId = this.generateClientId();
@@ -78,10 +81,10 @@ class ClientDatabaseService {
 
       return {
         clientId,
-        databaseName,
-        clientAdmin,
         db: clientDb,
       };
+
+      logger.info(`ClientDatabaseService.createClientDatabase: Successfully created database=${databaseName}, clientId=${clientId}`);
     } catch (error) {
       console.error('Error creating client database:', error);
       throw error;
@@ -94,6 +97,8 @@ class ClientDatabaseService {
   async initializeClientDatabase(databaseName, adminUserData) {
     try {
       const { email, firstName, lastName, phone, password } = adminUserData;
+
+      logger.info(`ClientDatabaseService.initializeClientDatabase: Initializing database=${databaseName}`);
 
       // Get models for client database
       const User = await getModel(databaseName, 'User', userSchema);
@@ -173,9 +178,10 @@ class ClientDatabaseService {
       console.log(`Client admin user created: ${adminUser.email}`);
 
       return {
-        roles: createdRoles,
         adminUser,
       };
+
+      logger.info(`ClientDatabaseService.initializeClientDatabase: Successfully initialized database=${databaseName}`);
     } catch (error) {
       console.error('Error initializing client database:', error);
       throw error;
